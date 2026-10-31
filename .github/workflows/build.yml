@@ -8,7 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Extrair projeto
-        run: unzip -q LumenLastLight.zip
+        run: |
+          ls -la
+          find . -iname "*.zip" -not -path "./.git/*"
+          Z=$(find . -iname "*.zip" -not -path "./.git/*" | head -n 1)
+          echo "Usando: $Z"
+          unzip -o -q "$Z" -d projeto
+          find projeto -name settings.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -18,9 +24,13 @@ jobs:
         with:
           gradle-version: 8.7
       - name: Compilar
-        working-directory: LumenLastLight
-        run: gradle assembleRelease --no-daemon
+        run: |
+          D=$(dirname $(find projeto -name settings.gradle.kts | head -n 1))
+          cd "$D"
+          gradle assembleRelease --no-daemon
+          mkdir -p $GITHUB_WORKSPACE/saida
+          cp app/build/outputs/apk/release/*.apk $GITHUB_WORKSPACE/saida/
       - uses: actions/upload-artifact@v4
         with:
           name: LumenLastLight-APK
-          path: LumenLastLight/app/build/outputs/apk/release/*.apk
+          path: saida/*.apk
